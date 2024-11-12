@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Internet Speed Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .results { margin-top: 20px; font-size: 1.2em; }
+        button { padding: 10px 20px; font-size: 1em; }
+    </style>
+</head>
+<body>
+    <h1>Internet Speed Test</h1>
+    <button onclick="runTest()">Run Speed Test</button>
+    <div class="results">
+        <p id="ping">Ping: -</p>
+        <p id="download">Download Speed: -</p>
+        <p id="download_size">Download Size: -</p>
+        <p id="upload">Upload Speed: -</p>
+        <p id="upload_size">Upload Size: -</p>
+    </div>
+
+    <script>
+        async function runTest() {
+            document.getElementById('ping').textContent = 'Ping is being calculated.';
+            await runPingTest();
+            document.getElementById('download').textContent = 'Download speed is being calculated.';
+            document.getElementById('download_size').textContent = 'Download size is being calculated.';
+            await runDownloadTest();
+            document.getElementById('upload').textContent = 'Upload speed is being calculated.';
+            document.getElementById('upload_size').textContent = 'Upload size is being calculated.';
+            await runUploadTest();
+        }
+
+        async function runPingTest() {
+            const startTime = performance.now();
+            await fetch('/ping-test');
+            const endTime = performance.now();
+            const latency = (endTime - startTime) / 2;
+            document.getElementById('ping').innerText = `Ping is: ${latency.toFixed(2)} ms`;
+        }
+
+        async function runDownloadTest() {
+            const fileUrl = '/download-test';
+    		let totalDownloadTime = 0;
+    	let totalFileSizeMB = 0;
+
+    	for (let i = 0; i < 3; i++) {
+                const startTime = performance.now();
+                const response = await fetch(fileUrl);
+                const blob = await response.blob();
+                const endTime = performance.now();
+
+                const downloadTime = (endTime - startTime) / 1000;
+                const fileSizeMB = blob.size / (1024 * 1024);
+
+                totalDownloadTime += downloadTime;
+                totalFileSizeMB += fileSizeMB;
+    		}
+    		const averageDownloadSpeedMBps = (totalFileSizeMB / totalDownloadTime).toFixed(2);
+
+            document.getElementById("download").innerText = `Download Speed: ${averageDownloadSpeedMBps} Mbps`;
+            document.getElementById("download_size").innerText = `${totalFileSizeMB.toFixed(2)} MB data downloaded.`;
+        }
+
+        async function runUploadTest() {
+            const data = new Blob([new ArrayBuffer(30 * 1024 * 1024)]); // 30MB of test data
+            const response = await fetch('/upload-test', {
+                method: 'POST',
+                body: data
+            });
+            const result = await response.json();
+            document.getElementById('upload').innerText = `Upload Speed: ${result.upload_speed.toFixed(2)} Mbps`;
+            document.getElementById('upload_size').innerText = `${result.file_size} MB data uploaded.`;
+        }
+    </script>
+</body>
+</html>
